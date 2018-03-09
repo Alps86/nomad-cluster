@@ -1,5 +1,5 @@
+*.tfstate*
 *.tfstate
-*.tfstate.backup
 .DS_Store
 .envrc
 .terraform
