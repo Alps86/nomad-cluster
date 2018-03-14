@@ -8,6 +8,7 @@ module "servers" {
 
   namespace = "${var.namespace}-server"
   instances = "${var.nomad_servers}"
+  repository_name = "${var.repository_name}"
 
   subnets          = ["${aws_subnet.default.*.id}"]
   vpc_id           = "${aws_vpc.default.id}"
@@ -34,6 +35,7 @@ module "clients" {
 
   namespace = "${var.namespace}-client"
   instances = "${var.nomad_agents}"
+  repository_name = "${var.repository_name}"
 
   subnets          = ["${aws_subnet.default.*.id}"]
   vpc_id           = "${aws_vpc.default.id}"

@@ -7,16 +7,22 @@ PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
 
 function installDependencies() {
   echo "Installing dependencies..."
-  sudo apt-get -qq update &>/dev/null
-  sudo apt-get -yqq install unzip &>/dev/null
+  apt-get -qq update &>/dev/null
+  apt-get -yqq install unzip &>/dev/null
 }
 
 function installDocker() {
   echo "Installing Docker..."
-  sudo apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
-  sudo apt-add-repository 'deb https://apt.dockerproject.org/repo ubuntu-xenial main'
-  sudo apt-get update
-  sudo apt-get install -y docker-engine
+  apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+  apt-add-repository 'deb https://apt.dockerproject.org/repo ubuntu-xenial main'
+  apt-get update
+  apt-get install -y docker-engine golang
+
+  export GOPATH=/root/go
+  export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+  go get -u -v github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cli/docker-credential-ecr-login
+  cp /root/go/bin/docker-credential-ecr-login /usr/local/bin/
 }
 
 function installConsul() {
@@ -26,17 +32,27 @@ function installConsul() {
   
   echo "Installing Consul..."
   unzip consul.zip >/dev/null
-  sudo chmod +x consul
-  sudo mv consul /usr/local/bin/consul
+  chmod +x consul
+  mv consul /usr/local/bin/consul
   
   # Setup Consul
-  sudo mkdir -p /mnt/consul
-  sudo mkdir -p /etc/consul.d
-  sudo tee /etc/consul.d/config.json > /dev/null <<EOF
+  mkdir -p /mnt/consul
+  mkdir -p /etc/consul.d
+
+  tee /home/ubuntu/docker_config.json > /dev/null <<"EOF"
+{
+  "credHelpers": {
+    "${repository_name}.amazonaws.com": "ecr-login"
+  }
+}
+
+EOF
+
+  tee /etc/consul.d/config.json > /dev/null <<EOF
   ${consul_config}
 EOF
   
-  sudo tee /etc/systemd/system/consul.service > /dev/null <<"EOF"
+  tee /etc/systemd/system/consul.service > /dev/null <<"EOF"
   [Unit]
   Description = "Consul"
   
@@ -49,7 +65,6 @@ EOF
 EOF
 }
 
-
 function installNomad() {
   echo "Fetching Nomad..."
   cd /tmp
@@ -57,17 +72,17 @@ function installNomad() {
   
   echo "Installing Nomad..."
   unzip nomad.zip >/dev/null
-  sudo chmod +x nomad
-  sudo mv nomad /usr/local/bin/nomad
+  chmod +x nomad
+  mv nomad /usr/local/bin/nomad
   
   # Setup Nomad
-  sudo mkdir -p /mnt/nomad
-  sudo mkdir -p /etc/nomad.d
-  sudo tee /etc/nomad.d/config.hcl > /dev/null <<EOF
+  mkdir -p /mnt/nomad
+  mkdir -p /etc/nomad.d
+  tee /etc/nomad.d/config.hcl > /dev/null <<EOF
   ${nomad_config}
 EOF
-  
-  sudo tee /etc/systemd/system/nomad.service > /dev/null <<"EOF"
+
+  tee /etc/systemd/system/nomad.service > /dev/null <<"EOF"
   [Unit]
   Description = "Nomad"
   
@@ -85,11 +100,11 @@ function installHashiUI() {
   cd /tmp
   curl -sLo hashi-ui \
     https://github.com/jippi/hashi-ui/releases/download/v${hashiui_version}/hashi-ui-linux-amd64
-  sudo chmod +x hashi-ui
-  sudo mv hashi-ui /usr/local/bin/hashi-ui
+  chmod +x hashi-ui
+  mv hashi-ui /usr/local/bin/hashi-ui
   
   echo "Installing hashi-ui..."
-  sudo tee /etc/systemd/system/hashi-ui.service > /dev/null <<EOF
+  tee /etc/systemd/system/hashi-ui.service > /dev/null <<EOF
   [Unit]
   description="Hashi UI"
   
@@ -127,19 +142,19 @@ fi
 
 
 # Start services
-sudo systemctl daemon-reload
+systemctl daemon-reload
   
 if [[ ${consul_enabled} == 1 ]]; then
-  sudo systemctl enable consul.service
-  sudo systemctl start consul.service
+  systemctl enable consul.service
+  systemctl start consul.service
 fi
 
 if [[ ${nomad_enabled} == 1 ]]; then
-  sudo systemctl enable nomad.service
-  sudo systemctl start nomad.service
+  systemctl enable nomad.service
+  systemctl start nomad.service
 fi
 
 if [[ ${hashiui_enabled} == 1 ]]; then
-  sudo systemctl enable hashi-ui.service
-  sudo systemctl start hashi-ui.service
+  systemctl enable hashi-ui.service
+  systemctl start hashi-ui.service
 fi

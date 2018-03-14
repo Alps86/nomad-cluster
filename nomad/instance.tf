@@ -31,6 +31,8 @@ data "template_file" "startup" {
     nomad_type    = "${var.nomad_type}"
     nomad_config  = "${data.template_file.config_nomad.rendered}"
 
+    repository_name = "${var.repository_name}"
+
     hashiui_enabled = "${var.hashiui_enabled}"
     hashiui_version = "${var.hashiui_version}"
   }

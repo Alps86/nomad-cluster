@@ -1,5 +1,9 @@
 variable "namespace" {}
 
+variable "repository_name" {
+  description = "Aws ecr repostiory"
+}
+
 variable "instances" {
   description = "The number of nomad servers."
 }

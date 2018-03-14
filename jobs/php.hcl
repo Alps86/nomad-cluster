@@ -1,4 +1,4 @@
-job "test" {
+job "php" {
   datacenters = ["dc1"]
   type = "service"
 
@@ -8,13 +8,13 @@ job "test" {
   }
 
   group "web" {
-    count = 3
+    count = 1
     task "web" {
       service {
         name = "web"
         port = "http"
         tags = [
-          "urlprefix-/"
+          "urlprefix-/test"
         ]
         check {
           type     = "http"
@@ -28,7 +28,7 @@ job "test" {
         port_map {
           http = 80
         }
-        image = "tutum/hello-world"
+        image = "xxxxxxxxxxxx.amazonaws.com/test:latest"
       }
 
       resources {
