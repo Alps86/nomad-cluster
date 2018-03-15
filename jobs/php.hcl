@@ -4,17 +4,26 @@ job "php" {
 
   update {
     stagger = "5s"
-    max_parallel = 10
+    max_parallel = 1
   }
 
-  group "web" {
+  group "stack" {
     count = 1
-    task "web" {
+    task "data" {
+      driver = "docker"
+      config {
+        volumes = [
+          "../code:/code"
+        ]
+        image = "xxxxxxxxxxxxx.amazonaws.com/data:latest"
+      }
+    },
+    task "nginx" {
       service {
-        name = "web"
+        name = "${TASKGROUP}-nginx"
         port = "http"
         tags = [
-          "urlprefix-/test"
+          "urlprefix-/"
         ]
         check {
           type     = "http"
@@ -25,18 +34,50 @@ job "php" {
       }
       driver = "docker"
       config {
+        volumes = [
+          "../code:/code"
+        ]
         port_map {
           http = 80
         }
-        image = "xxxxxxxxxxxx.amazonaws.com/test:latest"
+        image = "xxxxxxxxxxxxx.amazonaws.com/nginx:latest"
+      }
+
+      env = {
+        FPM_UPSTREAM = "${NOMAD_ADDR_fpm_fpm}"
       }
 
       resources {
         cpu = 100
-        memory = 64
+        memory = 32
         network {
           mbits = 1
           port "http" {}
+        }
+      }
+    },
+    task "fpm" {
+      service {
+        name = "${TASKGROUP}-fpm"
+      }
+
+      driver = "docker"
+      config {
+        volumes = [
+          "../code:/code"
+        ]
+        port_map {
+          fpm = 9000
+        }
+        image = "xxxxxxxxxxxxx.amazonaws.com/fpm:latest"
+      }
+
+      resources {
+        cpu = 100
+        memory = 32
+        network {
+          mbits = 1
+          port "fpm" {}
         }
       }
     }
